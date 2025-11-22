@@ -1,176 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Favorite Colors 🎨</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-  </head>
-  <body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #eef2ff; margin: 0; padding: 1.5rem;">
-    <main style="max-width: 700px; margin: 0 auto;">
-      <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1.5rem; color: #111827;">
-        Favorite Colors 🎨
-      </h1>
+<head>
+  <meta charset="UTF-8" />
+  <title>Favorite Colors</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      <!-- Form -->
-      <section style="background: white; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);">
-        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-          <input id="nameInput" placeholder="Name" />
-          <input id="colorInput" placeholder="Favorite color" />
-          <button id="addBtn">Add</button>
-        </div>
-        <p id="status" style="margin-top: 0.75rem; font-size: 0.9rem; color: #6b7280;"></p>
-      </section>
+  <!-- Simple styling -->
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+      margin: 0;
+      padding: 1.5rem;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 2.25rem;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .card {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
+      margin-bottom: 1rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    input {
+      flex: 1 1 150px;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #d1d5db;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #add-btn {
+      background: #2563eb;
+      color: white;
+    }
+    #add-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      background: #f9fafb;
+      margin-bottom: 0.5rem;
+    }
+    .color-dot {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      border: 2px solid #d1d5db;
+      margin-right: 0.75rem;
+    }
+    .person-main {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .delete-btn {
+      background: transparent;
+      color: #ef4444;
+      padding: 0.25rem 0.75rem;
+    }
+    .delete-btn:hover {
+      background: #fee2e2;
+    }
+  </style>
 
-      <!-- List -->
-      <section style="background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);">
-        <h2 id="count" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: #374151;">
-          People (0)
-        </h2>
-        <ul id="list" style="list-style: none; padding: 0; margin: 0;"></ul>
-      </section>
-    </main>
+  <!-- Supabase client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>Favorite Colors 🎨</h1>
 
-    <script type="module">
-      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.2/+esm";
+    <!-- Add form -->
+    <section class="card">
+      <div class="row">
+        <input id="name-input" placeholder="Name" />
+        <input id="color-input" placeholder="Favorite color" />
+        <button id="add-btn">Add</button>
+      </div>
+    </section>
 
-      // 🔴 TODO: replace these two values with YOUR Supabase values
-      const supabaseUrl = "https://rckahirpbfcptfontjhh.supabase.co"; // your project URL
-      const supabaseKey = "sb_publishable_XXXXXXXXXXXXXXXXXXXXXXXX"; // your PUBLISHABLE (anon) key
+    <!-- List -->
+    <section class="card">
+      <h2>People (<span id="people-count">0</span>)</h2>
+      <ul id="people-list"></ul>
+    </section>
+  </main>
 
-      const supabase = createClient(supabaseUrl, supabaseKey);
+  <script>
+    const { createClient } = supabase;
 
-      const nameInput = document.getElementById("nameInput");
-      const colorInput = document.getElementById("colorInput");
-      const addBtn = document.getElementById("addBtn");
-      const list = document.getElementById("list");
-      const countEl = document.getElementById("count");
-      const statusEl = document.getElementById("status");
+    // Your Supabase project details (you already gave me these)
+    const SUPABASE_URL = 'https://rckahirpbfcptfontjhh.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_XcChLfne_UUPlNwdlkG98Q_FtD0iuTl';
 
-      function setStatus(msg) {
-        statusEl.textContent = msg || "";
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const nameInput = document.getElementById('name-input');
+    const colorInput = document.getElementById('color-input');
+    const addBtn = document.getElementById('add-btn');
+    const listEl = document.getElementById('people-list');
+    const countEl = document.getElementById('people-count');
+
+    async function loadPeople() {
+      addBtn.disabled = true;
+      const { data, error } = await db
+        .from('favorite_colors')
+        .select('*')
+        .order('id', { ascending: true });
+
+      addBtn.disabled = false;
+
+      if (error) {
+        console.error(error);
+        alert('Error loading data from Supabase. Check console.');
+        return;
       }
 
-      function renderList(rows) {
-        list.innerHTML = "";
-        rows.forEach((row) => {
-          const li = document.createElement("li");
-          li.style.display = "flex";
-          li.style.alignItems = "center";
-          li.style.justifyContent = "space-between";
-          li.style.padding = "0.75rem";
-          li.style.marginBottom = "0.5rem";
-          li.style.borderRadius = "0.5rem";
-          li.style.backgroundColor = "#f9fafb";
+      listEl.innerHTML = '';
+      countEl.textContent = data.length;
 
-          const left = document.createElement("div");
-          left.style.display = "flex";
-          left.style.alignItems = "center";
-          left.style.gap = "0.75rem";
+      for (const row of data) {
+        const li = document.createElement('li');
 
-          const circle = document.createElement("div");
-          circle.style.width = "2rem";
-          circle.style.height = "2rem";
-          circle.style.borderRadius = "9999px";
-          circle.style.border = "2px solid #e5e7eb";
-          circle.title = row.color || "";
-          if (row.color) {
-            circle.style.backgroundColor = row.color;
+        const left = document.createElement('div');
+        left.className = 'person-main';
+
+        const dot = document.createElement('div');
+        dot.className = 'color-dot';
+        dot.title = row.color || '';
+        if (row.color) {
+          dot.style.backgroundColor = row.color;
+        }
+
+        const text = document.createElement('div');
+        const strong = document.createElement('strong');
+        strong.textContent = row.name;
+        const span = document.createElement('span');
+        span.style.marginLeft = '0.25rem';
+        span.style.color = '#6b7280';
+        span.textContent = '— ' + row.color;
+
+        text.appendChild(strong);
+        text.appendChild(span);
+
+        left.appendChild(dot);
+        left.appendChild(text);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'delete-btn';
+        delBtn.addEventListener('click', async () => {
+          const { error: delError } = await db
+            .from('favorite_colors')
+            .delete()
+            .eq('id', row.id);
+
+          if (delError) {
+            console.error(delError);
+            alert('Error deleting row. Check console.');
+          } else {
+            await loadPeople();
           }
-
-          const text = document.createElement("div");
-          const strong = document.createElement("strong");
-          strong.textContent = row.name;
-          strong.style.color = "#111827";
-
-          const span = document.createElement("span");
-          span.textContent = ` — ${row.color}`;
-          span.style.color = "#6b7280";
-          span.style.fontSize = "0.9rem";
-          span.style.marginLeft = "0.35rem";
-
-          text.appendChild(strong);
-          text.appendChild(span);
-
-          left.appendChild(circle);
-          left.appendChild(text);
-
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "Delete";
-          delBtn.style.color = "#b91c1c";
-          delBtn.style.fontSize = "0.85rem";
-          delBtn.style.border = "none";
-          delBtn.style.background = "transparent";
-          delBtn.style.padding = "0.3rem 0.6rem";
-          delBtn.style.borderRadius = "0.25rem";
-          delBtn.style.cursor = "pointer";
-
-          delBtn.addEventListener("click", async () => {
-            setStatus("Deleting...");
-            const { error } = await supabase
-              .from("favorite_colors")
-              .delete()
-              .eq("id", row.id);
-            if (error) {
-              console.error(error);
-              setStatus("Error deleting row");
-            } else {
-              setStatus("Deleted!");
-              await loadRows();
-            }
-          });
-
-          li.appendChild(left);
-          li.appendChild(delBtn);
-          list.appendChild(li);
         });
 
-        countEl.textContent = `People (${rows.length})`;
+        li.appendChild(left);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
       }
+    }
 
-      async function loadRows() {
-        setStatus("Loading...");
-        const { data, error } = await supabase
-          .from("favorite_colors")
-          .select("*")
-          .order("id", { ascending: false });
+    async function addPerson() {
+      const name = nameInput.value.trim();
+      const color = colorInput.value.trim();
+      if (!name || !color) return;
 
-        if (error) {
-          console.error(error);
-          setStatus("Error loading data");
-          return;
-        }
+      addBtn.disabled = true;
 
-        renderList(data || []);
-        setStatus("");
-      }
-
-      addBtn.addEventListener("click", async () => {
-        const name = nameInput.value.trim();
-        const color = colorInput.value.trim();
-
-        if (!name || !color) {
-          setStatus("Please enter both name and color.");
-          return;
-        }
-
-        setStatus("Saving...");
-        const { error } = await supabase
-          .from("favorite_colors")
-          .insert([{ name, color }]);
-
-        if (error) {
-          console.error(error);
-          setStatus("Error saving data");
-        } else {
-          nameInput.value = "";
-          colorInput.value = "";
-          setStatus("Saved!");
-          await loadRows();
-        }
+      const { error } = await db.from('favorite_colors').insert({
+        name,
+        color,
       });
 
-      // initial load
-      loadRows();
-    </script>
-  </body>
+      addBtn.disabled = false;
+
+      if (error) {
+        console.error(error);
+        alert('Error inserting data. Check console.');
+        return;
+      }
+
+      nameInput.value = '';
+      colorInput.value = '';
+      await loadPeople();
+    }
+
+    addBtn.addEventListener('click', addPerson);
+    window.addEventListener('load', loadPeople);
+  </script>
+</body>
 </html>
