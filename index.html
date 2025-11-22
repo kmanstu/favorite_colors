@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Favorite Colors 🎨</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #eef2ff; margin: 0; padding: 1.5rem;">
+    <main style="max-width: 700px; margin: 0 auto;">
+      <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1.5rem; color: #111827;">
+        Favorite Colors 🎨
+      </h1>
+
+      <!-- Form -->
+      <section style="background: white; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+          <input id="nameInput" placeholder="Name" />
+          <input id="colorInput" placeholder="Favorite color" />
+          <button id="addBtn">Add</button>
+        </div>
+        <p id="status" style="margin-top: 0.75rem; font-size: 0.9rem; color: #6b7280;"></p>
+      </section>
+
+      <!-- List -->
+      <section style="background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);">
+        <h2 id="count" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: #374151;">
+          People (0)
+        </h2>
+        <ul id="list" style="list-style: none; padding: 0; margin: 0;"></ul>
+      </section>
+    </main>
+
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.2/+esm";
+
+      // 🔴 TODO: replace these two values with YOUR Supabase values
+      const supabaseUrl = "https://rckahirpbfcptfontjhh.supabase.co"; // your project URL
+      const supabaseKey = "sb_publishable_XXXXXXXXXXXXXXXXXXXXXXXX"; // your PUBLISHABLE (anon) key
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const nameInput = document.getElementById("nameInput");
+      const colorInput = document.getElementById("colorInput");
+      const addBtn = document.getElementById("addBtn");
+      const list = document.getElementById("list");
+      const countEl = document.getElementById("count");
+      const statusEl = document.getElementById("status");
+
+      function setStatus(msg) {
+        statusEl.textContent = msg || "";
+      }
+
+      function renderList(rows) {
+        list.innerHTML = "";
+        rows.forEach((row) => {
+          const li = document.createElement("li");
+          li.style.display = "flex";
+          li.style.alignItems = "center";
+          li.style.justifyContent = "space-between";
+          li.style.padding = "0.75rem";
+          li.style.marginBottom = "0.5rem";
+          li.style.borderRadius = "0.5rem";
+          li.style.backgroundColor = "#f9fafb";
+
+          const left = document.createElement("div");
+          left.style.display = "flex";
+          left.style.alignItems = "center";
+          left.style.gap = "0.75rem";
+
+          const circle = document.createElement("div");
+          circle.style.width = "2rem";
+          circle.style.height = "2rem";
+          circle.style.borderRadius = "9999px";
+          circle.style.border = "2px solid #e5e7eb";
+          circle.title = row.color || "";
+          if (row.color) {
+            circle.style.backgroundColor = row.color;
+          }
+
+          const text = document.createElement("div");
+          const strong = document.createElement("strong");
+          strong.textContent = row.name;
+          strong.style.color = "#111827";
+
+          const span = document.createElement("span");
+          span.textContent = ` — ${row.color}`;
+          span.style.color = "#6b7280";
+          span.style.fontSize = "0.9rem";
+          span.style.marginLeft = "0.35rem";
+
+          text.appendChild(strong);
+          text.appendChild(span);
+
+          left.appendChild(circle);
+          left.appendChild(text);
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Delete";
+          delBtn.style.color = "#b91c1c";
+          delBtn.style.fontSize = "0.85rem";
+          delBtn.style.border = "none";
+          delBtn.style.background = "transparent";
+          delBtn.style.padding = "0.3rem 0.6rem";
+          delBtn.style.borderRadius = "0.25rem";
+          delBtn.style.cursor = "pointer";
+
+          delBtn.addEventListener("click", async () => {
+            setStatus("Deleting...");
+            const { error } = await supabase
+              .from("favorite_colors")
+              .delete()
+              .eq("id", row.id);
+            if (error) {
+              console.error(error);
+              setStatus("Error deleting row");
+            } else {
+              setStatus("Deleted!");
+              await loadRows();
+            }
+          });
+
+          li.appendChild(left);
+          li.appendChild(delBtn);
+          list.appendChild(li);
+        });
+
+        countEl.textContent = `People (${rows.length})`;
+      }
+
+      async function loadRows() {
+        setStatus("Loading...");
+        const { data, error } = await supabase
+          .from("favorite_colors")
+          .select("*")
+          .order("id", { ascending: false });
+
+        if (error) {
+          console.error(error);
+          setStatus("Error loading data");
+          return;
+        }
+
+        renderList(data || []);
+        setStatus("");
+      }
+
+      addBtn.addEventListener("click", async () => {
+        const name = nameInput.value.trim();
+        const color = colorInput.value.trim();
+
+        if (!name || !color) {
+          setStatus("Please enter both name and color.");
+          return;
+        }
+
+        setStatus("Saving...");
+        const { error } = await supabase
+          .from("favorite_colors")
+          .insert([{ name, color }]);
+
+        if (error) {
+          console.error(error);
+          setStatus("Error saving data");
+        } else {
+          nameInput.value = "";
+          colorInput.value = "";
+          setStatus("Saved!");
+          await loadRows();
+        }
+      });
+
+      // initial load
+      loadRows();
+    </script>
+  </body>
+</html>
