@@ -1,7 +1,10 @@
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 export async function GET() {
-  const { data, error } = await supabase.from("favorite_colors").select("*");
+  const { data, error } = await supabase
+    .from("favorite_colors")
+    .select("*");
+
   return Response.json({ data, error });
 }
 
